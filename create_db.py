@@ -1,17 +1,56 @@
-from app import app, get_db
+import sqlite3
 
-with app.app_context():
-    db = get_db()
-    cur = db.cursor()
+def create_tables():
 
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+
+    # ================= USERS =================
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS study_plan(
-        user TEXT,
-        topic TEXT,
-        status TEXT
+    CREATE TABLE IF NOT EXISTS users(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
     )
     """)
 
-    db.commit()
+    # ================= NOTES =================
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS notes(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT NOT NULL,
+        subject TEXT,
+        content TEXT
+    )
+    """)
 
-print("✅ study_plan table created successfully")
+    # ================= STUDY PLAN =================
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS study_plan(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT NOT NULL,
+        topic TEXT,
+        status TEXT DEFAULT 'pending'
+    )
+    """)
+
+    # ================= ANALYTICS =================
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS analytics(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT NOT NULL,
+        topic TEXT,
+        score INTEGER
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+    print("✅ All tables created successfully")
+
+
+# 🔥 RUN FILE
+if __name__ == "__main__":
+    create_tables()

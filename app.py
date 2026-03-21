@@ -440,17 +440,56 @@ def dashboard():
     db = get_db()
     cur = db.cursor()
 
-    # 🔥 VERIFY USER EXISTS IN DB
+    user_email = session["user"]
+
+    # 🔥 GET USER NAME
     user = cur.execute(
         "SELECT name FROM users WHERE email=?",
-        (session["user"],)
+        (user_email,)
     ).fetchone()
 
     if not user:
         session.clear()
         return redirect("/login")
 
-    return render_template("dashboard.html", name=user[0])
+    name = user[0]
+
+    # ✅ TOTAL TOPICS
+    total = cur.execute(
+        "SELECT COUNT(*) FROM study_plan WHERE user=?",
+        (user_email,)
+    ).fetchone()[0]
+
+    # ✅ COMPLETED TOPICS
+    completed = cur.execute(
+        "SELECT COUNT(*) FROM study_plan WHERE user=? AND status='done'",
+        (user_email,)
+    ).fetchone()[0]
+
+    # ✅ NOTES COUNT
+    notes = cur.execute(
+        "SELECT COUNT(*) FROM notes WHERE user=?",
+        (user_email,)
+    ).fetchone()[0]
+
+    # ✅ QUIZ ACCURACY
+    score = cur.execute(
+        "SELECT AVG(score) FROM analytics WHERE user=?",
+        (user_email,)
+    ).fetchone()[0]
+
+    accuracy = int(score) if score else 0
+
+    return render_template(
+        "dashboard.html",
+        name=name,
+        total=total,
+        completed=completed,
+        notes=notes,
+        accuracy=accuracy
+    )
+
+
 
 @app.route("/notes")
 def notes():

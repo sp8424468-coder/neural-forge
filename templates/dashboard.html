@@ -95,7 +95,7 @@ body{
 <!-- Content -->
 <div class="content">
 
-<h2>Welcome {{name}} 👋</h2>
+<h2>Welcome {{ name }} 👋</h2>
 <p>Your learning dashboard overview 🚀</p>
 
 <!-- 🔥 STATS -->
@@ -103,21 +103,21 @@ body{
 
 <div class="col-md-4">
 <div class="card stat-card">
-<div class="big">12</div>
+<div class="big">{{ completed }}</div>
 <p>Topics Completed</p>
 </div>
 </div>
 
 <div class="col-md-4">
 <div class="card stat-card">
-<div class="big">85%</div>
+<div class="big">{{ accuracy }}%</div>
 <p>Quiz Accuracy</p>
 </div>
 </div>
 
 <div class="col-md-4">
 <div class="card stat-card">
-<div class="big">5</div>
+<div class="big">{{ notes }}</div>
 <p>Notes Uploaded</p>
 </div>
 </div>
@@ -162,7 +162,10 @@ body{
 <p>Complete your topics step by step to master concepts.</p>
 
 <div class="progress">
-<div class="progress-bar bg-success" style="width:60%">60%</div>
+<div class="progress-bar bg-success"
+     style="width: {{ (completed / total * 100) if total else 0 }}%">
+    {{ ((completed / total) * 100) | int if total else 0 }}%
+</div>
 </div>
 
 </div>
@@ -172,4 +175,5 @@ body{
 </div>
 
 </body>
+
 </html>
