@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>AI Tutor - MindTrack AI</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+
+body{
+    margin:0;
+    display:flex;
+    font-family:'Segoe UI',sans-serif;
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    color:white;
+}
+
+/* Sidebar */
+.sidebar{
+    width:220px;
+    height:100vh;
+    background: rgba(0,0,0,0.7);
+    padding:20px;
+    position:fixed;
+}
+
+.sidebar h3{
+    margin-bottom:30px;
+}
+
+.sidebar a{
+    display:block;
+    color:white;
+    padding:10px;
+    margin-bottom:10px;
+    border-radius:8px;
+    text-decoration:none;
+    transition:0.3s;
+}
+
+.sidebar a:hover{
+    background:rgba(255,255,255,0.2);
+}
+
+/* Content */
+.content{
+    margin-left:240px;
+    padding:30px;
+    width:100%;
+}
+
+/* Topic badge */
+.topic{
+    background: rgba(255,255,255,0.2);
+    padding:10px 15px;
+    border-radius:10px;
+    margin-bottom:15px;
+    display:inline-block;
+}
+
+/* Chat box */
+.chat-box{
+    height:450px;
+    overflow-y:auto;
+    padding:20px;
+    border-radius:15px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+}
+
+/* Messages */
+.message{
+    margin-bottom:15px;
+    max-width:70%;
+    padding:12px;
+    border-radius:12px;
+}
+
+/* User bubble */
+.user-msg{
+    background:#00c6ff;
+    color:white;
+    margin-left:auto;
+    text-align:right;
+}
+
+/* AI bubble */
+.ai-msg{
+    background:white;
+    color:black;
+}
+
+/* Input */
+.input-group input{
+    border-radius:10px;
+}
+
+/* Buttons */
+.btn{
+    border-radius:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+
+<h3>🧠 MindTrack</h3>
+
+<a href="/dashboard">🏠 Dashboard</a>
+<a href="/notes">📄 Notes</a>
+<a href="/chat">🤖 AI Tutor</a>
+<a href="/quiz">📝 Quiz</a>
+<a href="/study-plan">📚 Study Plan</a>
+<a href="/logout">🚪 Logout</a>
+
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<h3>🤖 AI Tutor</h3>
+
+<!-- Topic -->
+<div class="topic" id="topicBox">
+📘 Topic: Loading...
+</div>
+
+<!-- Chat -->
+<div id="chatbox" class="chat-box"></div>
+
+<!-- Input -->
+<div class="input-group mt-3">
+
+<input id="msg" class="form-control" placeholder="Ask anything...">
+
+<button onclick="send()" class="btn btn-primary ms-2">Send</button>
+
+<button onclick="takeQuiz()" class="btn btn-success ms-2">
+Take Quiz
+</button>
+
+</div>
+
+</div>
+
+<!-- JS -->
+<script>
+
+// LOAD TOPIC
+function loadTopic(){
+
+fetch("/get-topic")
+.then(res=>res.json())
+.then(data=>{
+
+let topic = data.topic
+
+document.getElementById("topicBox").innerText =
+"📘 Topic: " + (topic || "Not selected")
+
+if(topic){
+
+let box = document.getElementById("chatbox")
+
+box.innerHTML = `
+<div class="message ai-msg">
+<b>AI Tutor</b><br>
+Loading explanation for <b>${topic}</b>...
+</div>
+`
+
+fetch("/chat-api",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+message: "Explain " + topic + " with real world example"
+})
+})
+.then(res=>res.json())
+.then(data=>{
+
+let clean = data.reply
+.replace(/[*#|`]/g,"")
+.replace(/\n/g,"<br>")
+.replace("Definition:", "<br><b>Definition:</b><br>")
+.replace("Explanation:", "<br><b>Explanation:</b><br>")
+.replace("Example:", "<br><b>Example:</b><br>")
+
+box.innerHTML = `
+<div class="message ai-msg">
+<b>AI Tutor</b><br>
+${clean}
+</div>
+`
+
+})
+
+}
+
+})
+
+}
+
+
+// SEND MESSAGE
+function send(){
+
+let input = document.getElementById("msg")
+let message = input.value.trim()
+
+if(message==="") return
+
+let box = document.getElementById("chatbox")
+
+// USER
+box.innerHTML += `
+<div class="message user-msg">
+<b>You</b><br>${message}
+</div>
+`
+
+input.value=""
+
+// LOADING
+let id = "load-" + Date.now()
+
+box.innerHTML += `
+<div id="${id}" class="message ai-msg">
+<b>AI Tutor</b><br>Typing...
+</div>
+`
+
+box.scrollTop = box.scrollHeight
+
+fetch("/chat-api",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({message:message})
+})
+.then(res=>res.json())
+.then(data=>{
+
+let clean = data.reply
+.replace(/[*#|`]/g,"")
+.replace(/\n/g,"<br>")
+.replace("Definition:", "<br><b>Definition:</b><br>")
+.replace("Explanation:", "<br><b>Explanation:</b><br>")
+.replace("Example:", "<br><b>Example:</b><br>")
+
+document.getElementById(id).innerHTML = `
+<b>AI Tutor</b><br>${clean}
+`
+
+box.scrollTop = box.scrollHeight
+
+})
+.catch(()=>{
+document.getElementById(id).innerHTML = "⚠️ Error"
+})
+
+}
+
+
+// QUIZ
+function takeQuiz(){
+
+fetch("/get-topic")
+.then(res=>res.json())
+.then(data=>{
+
+let topic = data.topic
+
+if(!topic){
+alert("Select a topic first")
+return
+}
+
+window.location.href = "/quiz?topic=" + encodeURIComponent(topic)
+
+})
+
+}
+
+
+// ENTER KEY
+document.getElementById("msg").addEventListener("keypress", function(e){
+if(e.key==="Enter"){
+send()
+}
+})
+
+
+// LOAD
+window.onload = function(){
+loadTopic()
+}
+
+</script>
+
+</body>
+</html>
+
+
+

@@ -1,0 +1,6 @@
+Flask
+flask-mail
+PyPDF2
+python-pptx
+groq
+python-dotenv

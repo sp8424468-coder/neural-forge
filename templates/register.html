@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Register - MindTrack AI</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+
+body{
+    background: linear-gradient(120deg,#667eea,#764ba2);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Container */
+.box{
+    max-width:450px;
+    margin:auto;
+    margin-top:60px;
+    padding:30px;
+    background:white;
+    border-radius:15px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* Title */
+h3{
+    font-weight:bold;
+}
+
+/* Button */
+.btn-custom{
+    border-radius:25px;
+}
+
+/* Small text */
+.small-text{
+    font-size:14px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h3 class="text-center mb-3">🧠 Create Account</h3>
+
+<!-- 🔥 ERROR MESSAGE HERE -->
+{% if error %}
+<div class="alert alert-danger text-center">
+    {{ error }}
+</div>
+{% endif %}
+
+<form method="POST">
+
+<input name="name" class="form-control mb-2" placeholder="Full Name" required>
+
+<input name="email" class="form-control mb-2" placeholder="Email" required>
+
+<input name="phone" class="form-control mb-2" placeholder="Phone Number" required>
+
+<select name="course" class="form-control mb-2" required>
+<option value="">Select Course</option>
+
+<!-- 🔥 MANY COURSES -->
+<option>BCA</option>
+<option>B.Tech</option>
+<option>MCA</option>
+<option>BSc Computer Science</option>
+<option>BSc IT</option>
+<option>BSc Data Science</option>
+<option>BBA</option>
+<option>BCom</option>
+<option>BA</option>
+<option>BBA Finance</option>
+<option>BBA Marketing</option>
+<option>BBA HR</option>
+<option>BSc Mathematics</option>
+<option>BSc Physics</option>
+<option>BSc Chemistry</option>
+<option>BSc Electronics</option>
+<option>Diploma Computer Engineering</option>
+<option>Diploma IT</option>
+<option>Diploma Electronics</option>
+<option>MBA</option>
+<option>MBA Finance</option>
+<option>MBA Marketing</option>
+<option>MBA HR</option>
+<option>MSc Computer Science</option>
+<option>MSc IT</option>
+<option>MSc Data Science</option>
+<option>MSc AI</option>
+<option>MSc Cyber Security</option>
+<option>BE Computer Engineering</option>
+<option>BE IT</option>
+<option>BE Mechanical</option>
+<option>BE Civil</option>
+<option>BE Electrical</option>
+<option>BE Electronics</option>
+<option>B.Tech AI</option>
+<option>B.Tech Data Science</option>
+<option>B.Tech Cyber Security</option>
+<option>B.Tech Mechanical</option>
+<option>B.Tech Civil</option>
+<option>B.Tech Electrical</option>
+<option>B.Tech Electronics</option>
+<option>PhD Computer Science</option>
+<option>PhD AI</option>
+<option>PhD Data Science</option>
+<option>PhD IT</option>
+<option>PhD Cyber Security</option>
+<option>Other</option>
+
+</select>
+
+<input name="password" type="password" class="form-control mb-3" placeholder="Password" required>
+
+<button class="btn btn-primary w-100 btn-custom">Register</button>
+
+</form>
+
+<hr>
+
+<p class="text-center small-text">
+Already have account? <a href="/login">Login</a>
+</p>
+
+</div>
+
+</body>
+
+</html>

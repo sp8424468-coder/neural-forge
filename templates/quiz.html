@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>AI Quiz</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+body{
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    font-family:'Poppins',sans-serif;
+    min-height:100vh;
+}
+
+.container-box{
+    max-width:750px;
+    margin:auto;
+    margin-top:60px;
+}
+
+/* Card */
+.quiz-box{
+    background:white;
+    padding:30px;
+    border-radius:12px;
+    box-shadow:0 8px 25px rgba(0,0,0,0.2);
+}
+
+/* Title */
+h3{
+    font-weight:600;
+    color:#333;
+}
+
+/* Inputs */
+.form-control{
+    border-radius:8px;
+}
+
+/* Difficulty */
+.diff-btn{
+    flex:1;
+    padding:8px;
+    border-radius:8px;
+    border:1px solid #ddd;
+    background:#f8f9fa;
+    color:#333;
+    cursor:pointer;
+}
+
+.diff-btn.active{
+    background:#007bff;
+    color:white;
+    border:none;
+}
+
+/* Buttons */
+.btn-primary{ background:#007bff; border:none; }
+.btn-success{ background:#28a745; border:none; }
+.btn-danger{ background:#dc3545; border:none; }
+
+/* Timer */
+#timer{
+    background:#fff3cd;
+    border-radius:8px;
+    color:#856404;
+}
+
+/* Progress */
+.progress{ height:6px; }
+.progress-bar{ background:#007bff; }
+
+/* Question */
+#quizBox{
+    background:#f8f9fa;
+    padding:15px;
+    border-radius:8px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container-box">
+<div class="quiz-box">
+
+<h3 class="text-center mb-4">🧠 AI Quiz</h3>
+
+<input id="topic" class="form-control mb-3" placeholder="Enter topic">
+
+<!-- 🔥 HIDDEN NOTE ID -->
+<input type="hidden" id="noteId">
+
+<!-- Difficulty -->
+<div class="d-flex gap-2 mb-3">
+<button class="diff-btn" onclick="setDifficulty('easy',this)">Easy</button>
+<button class="diff-btn" onclick="setDifficulty('medium',this)">Medium</button>
+<button class="diff-btn" onclick="setDifficulty('hard',this)">Hard</button>
+</div>
+
+<button onclick="generateQuiz()" class="btn btn-primary w-100">
+Generate Quiz
+</button>
+
+<hr>
+
+<div class="progress mb-2">
+<div id="progressBar" class="progress-bar" style="width:0%"></div>
+</div>
+
+<div id="timer" class="text-center p-2 mb-3">Time: 60</div>
+
+<div id="quizBox"></div>
+
+<button id="nextBtn" class="btn btn-success mt-3 w-100" onclick="nextQuestion()" style="display:none">
+Next Question
+</button>
+
+<button id="submitBtn" class="btn btn-danger mt-3 w-100" onclick="finishQuiz()" style="display:none">
+Finish Quiz
+</button>
+
+<div id="resultBox" class="mt-4 text-center"></div>
+
+<form id="quizForm" method="POST" action="/submit-quiz">
+<input type="hidden" name="topic" id="quizTopic">
+<input type="hidden" name="score" id="quizScore">
+</form>
+
+</div>
+</div>
+
+<script>
+
+let difficulty=""
+
+// SET DIFFICULTY
+function setDifficulty(level,el){
+    difficulty=level
+    document.querySelectorAll(".diff-btn").forEach(b=>b.classList.remove("active"))
+    el.classList.add("active")
+}
+
+// 🔥 AUTO LOAD (TOPIC + NOTE ID)
+window.onload = function(){
+
+    let params = new URLSearchParams(window.location.search)
+
+    let topic = params.get("topic")
+    let noteId = params.get("note_id")
+
+    if(topic){
+        document.getElementById("topic").value = topic
+    }
+
+    if(noteId){
+        document.getElementById("noteId").value = noteId
+    }
+
+    if(topic){
+        generateQuiz()
+    }
+}
+
+let quiz = []
+let current = 0
+let score = 0
+let timer = 60
+let interval
+
+const timerEl = document.getElementById("timer")
+const quizBox = document.getElementById("quizBox")
+const nextBtn = document.getElementById("nextBtn")
+const submitBtn = document.getElementById("submitBtn")
+const resultBox = document.getElementById("resultBox")
+
+// 🔥 GENERATE QUIZ (UPDATED)
+function generateQuiz(){
+
+    let topic = document.getElementById("topic").value
+    let noteId = document.getElementById("noteId").value
+
+    if(topic.trim()===""){
+        alert("Enter topic")
+        return
+    }
+
+    document.getElementById("quizTopic").value = topic
+
+    fetch("/generate-quiz",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+            topic: topic,
+            difficulty: difficulty,
+            note_id: noteId   // 🔥 MAIN FIX
+        })
+    })
+    .then(res=>res.json())
+    .then(data=>{
+
+        quiz = JSON.parse(data.quiz)
+        current = 0
+        score = 0
+
+        showQuestion()
+
+        // 🔥 HANDLE TIMER BASED ON DIFFICULTY
+        if(difficulty === "easy"){
+            timerEl.style.display = "block"
+            startTimer()
+        }else{
+            clearInterval(interval)
+            timerEl.style.display = "none"
+        }
+
+    })
+}
+// SHOW QUESTION
+function showQuestion(){
+
+    let q = quiz[current]
+
+    document.getElementById("progressBar").style.width =
+    ((current/quiz.length)*100)+"%"
+
+    let html = `<h5>${q.question}</h5>`
+
+    if(q.options){
+        q.options.forEach(opt=>{
+            html += `
+            <div class="form-check">
+                <input type="radio" name="answer" value="${opt}">
+                <label>${opt}</label>
+            </div>`
+        })
+    }else{
+        html += `<textarea id="writtenAnswer" class="form-control"></textarea>`
+    }
+
+    quizBox.innerHTML = html
+
+    if(current === quiz.length-1){
+        nextBtn.style.display="none"
+        submitBtn.style.display="block"
+    }else{
+        nextBtn.style.display="block"
+        submitBtn.style.display="none"
+    }
+}
+
+// NEXT
+function nextQuestion(){
+
+    let q = quiz[current]
+
+    if(q.options){
+        let selected = document.querySelector('input[name="answer"]:checked')
+
+        if(!selected){
+            alert("Select answer")
+            return
+        }
+
+        if(selected.value === q.answer) score++
+    }
+
+    current++
+    showQuestion()
+}
+
+// FINISH
+function finishQuiz(){
+
+    let q = quiz[current]
+    let userAnswer = ""
+
+    // ✅ MCQ
+    if(q.options){
+
+        let selected = document.querySelector('input[name="answer"]:checked')
+
+        if(!selected){
+            alert("Select answer")
+            return
+        }
+
+        userAnswer = selected.value
+    }
+
+    // ✅ WRITTEN
+    else{
+
+        userAnswer = document.getElementById("writtenAnswer").value
+
+        if(userAnswer.trim()===""){
+            alert("Write answer")
+            return
+        }
+    }
+
+    // 🔥 SEND TO AI FOR CHECKING
+    fetch("/evaluate-answer",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            question: q.question,
+            answer: q.answer,
+            student_answer: userAnswer
+        })
+    })
+    .then(res=>res.json())
+    .then(data=>{
+
+        clearInterval(interval)
+
+        if(data.result === "correct"){
+
+            alert("✅ Correct!")
+
+            setTimeout(()=>{
+                window.location.href="/study-plan"
+            },1000)
+
+        }else{
+
+            alert("❌ Wrong!\n\n" + data.full)
+
+            setTimeout(()=>{
+                window.location.href="/chat"
+            },1500)
+        }
+
+    })
+}
+
+// TIMER
+function startTimer(){
+
+    clearInterval(interval)
+
+    // ❌ NO TIMER for medium & hard
+    if(difficulty === "medium" || difficulty === "hard"){
+        timerEl.style.display = "none"
+        return
+    }
+
+    // ✅ TIMER ONLY for easy
+    timerEl.style.display = "block"
+
+    timer = 60
+
+    interval = setInterval(()=>{
+        timer--
+        timerEl.innerText = "Time: " + timer
+
+        if(timer<=0){
+            clearInterval(interval)
+            finishQuiz()
+        }
+    },1000)
+}
+</script>
+
+</body>
+</html>
