@@ -325,12 +325,16 @@ function finishQuiz(){
                 window.location.href="/study-plan"
             },1000)
 
-        }else{
+        }
 
-            alert("❌ Wrong!\n\n" + data.full)
+        // 🔥 NEW HINDSIGHT FLOW
+        else if(data.result === "wrong"){
 
+             alert("❌ Learn again\n\n" + data.feedback)
+
+            // 🔥 GO BACK TO AI TUTOR
             setTimeout(()=>{
-                window.location.href="/chat"
+                window.location.href = "/chat"
             },1500)
         }
 

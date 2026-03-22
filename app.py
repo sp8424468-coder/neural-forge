@@ -198,7 +198,7 @@ def chat_api():
     topic = session.get("current_topic", "")
 
     # -----------------------------
-    # 🔥 FINAL PROMPT (STRICT FORMAT)
+    # 🔥 FINAL PROMPT
     # -----------------------------
     prompt = f"""
 You are a smart study tutor.
@@ -230,13 +230,27 @@ Rules:
 """
 
     try:
+        # 🔥 FIRST AI CALL
         response = client.chat.completions.create(
             model="openai/gpt-oss-120b",
-            messages=[{"role":"user","content":prompt}],
+            messages=[{"role": "user", "content": prompt}],
             max_tokens=300
         )
 
         reply = response.choices[0].message.content
+
+        # 🔥 HINDSIGHT IMPROVEMENT (SECOND CALL)
+        if "mistake" in reply.lower():
+
+            improved_prompt = prompt + "\nExplain clearly again with simple example"
+
+            response = client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=[{"role": "user", "content": improved_prompt}],
+                max_tokens=200
+            )
+
+            reply = response.choices[0].message.content
 
         # -----------------------------
         # 🔥 CLEAN RESPONSE
@@ -724,6 +738,7 @@ Content:
 
     return render_template("study_plan.html", topics=rows)
 # ---------------- AI EVALUATE ANSWER ----------------
+
 @app.route("/evaluate-answer", methods=["POST"])
 def evaluate_answer():
 
@@ -733,8 +748,9 @@ def evaluate_answer():
     correct_answer = data["answer"]
     student_answer = data["student_answer"]
 
+    # 🔥 HINDSIGHT PROMPT
     prompt = f"""
-You are an exam evaluator.
+You are a smart teacher.
 
 Question:
 {question}
@@ -745,35 +761,30 @@ Correct Answer:
 Student Answer:
 {student_answer}
 
-Evaluate like a strict teacher.
+Analyze deeply.
 
-Rules:
-- If answer is correct → Marks: 1
-- If wrong → Marks: 0
-- Give short feedback (1 line)
-- Be simple and clear
-
-Return EXACT format:
+Return in this format:
 
 Result: correct OR wrong
-Marks: 0 or 1
-Feedback: <one line>
+Mistake: explain what student did wrong
+Correction: explain correct concept clearly
+Example: give real world example
 """
 
     try:
         response = client.chat.completions.create(
             model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=150
+            max_tokens=200
         )
 
         reply = response.choices[0].message.content
 
-        # 🔥 CHECK RESULT
-        if "Marks: 1" in reply:
-            result = "correct"
+        # ✅ SIMPLE & CLEAN RESULT LOGIC
+        result = "correct" if "Result: correct" in reply else "wrong"
 
-            # ✅ UPDATE STUDY PLAN (VERY IMPORTANT)
+        # ✅ UPDATE STUDY PLAN ONLY IF CORRECT
+        if result == "correct":
             db = get_db()
             cur = db.cursor()
 
@@ -785,20 +796,18 @@ Feedback: <one line>
 
             db.commit()
 
-        else:
-            result = "wrong"
-
         return {
             "result": result,
-            "full": reply
+            "feedback": reply
         }
 
     except Exception as e:
-        print(e)
+        print("AI ERROR:", e)
         return {
             "result": "wrong",
             "full": "⚠️ AI evaluation error"
         }
+
 @app.route("/set-topic")
 def set_topic():
 
